@@ -1,0 +1,410 @@
+---
+title: "PSPG 245A: PK concepts with PKPDsim - Workshop 2 Tasks"
+author: "Savic Lab"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 5
+    toc_float: TRUE
+  pdf_document: default
+---
+
+<br> <br> <b> Exercises </b><br>
+
+<b> 3) NCA tutorial </b> <br> a) Loading/Wrangling PK data <br> b) Calculating AUC, Cmax, Tmax using NonCompart <br> c) Interspecies scaling
+
+<b> 4) ORAL 1-CMT PK MODEL </b> <br> a) Build an oral 1-cmt PK model <br> b) Optimal dosing for new drug
+
+<b> BONUS: ORAL 2-CMT PK MODEL </b> <br> a) Build an oral 2-cmt PK model <br> b) Compare the 2-cmt and the 1-cmt model
+
+<b> PKPDsim documentation: </b> <br> <https://github.com/ronkeizer/pkpdsim-docs/tree/master> <br>
+
+# Installing and Loading packages
+
+```{r warning=F, message=F}
+# To install, remove the # before command and run the line (CTRL + RETURN)
+# Comment out (with #) if you've already installed them
+
+# To install PKPDsim
+# library(devtools)
+# install_github("InsightRX/PKPDsim")
+
+# To install other packages that we'll use today
+# install.packages("dplyr")
+# install.packages("tidyr")
+# install.packages("ggplot2")
+# install.packages("NonCompart")
+
+# Load libraries
+library(PKPDsim)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(NonCompart)
+library(tidyverse)
+```
+
+# Workshop #2
+
+## EXERCISE 3. NCA Tutorial
+
+You have a PK dataset of 12 mice that were given a single dose of 0.6 mg of drug orally. How can we rapidly determine AUC and rate of elimination?
+
+For this analysis, we will use an R package called "NonCompart."
+
+### a.) Load mouse data
+
+```{r}
+# let's read in our dataset using read.csv
+# let's name the data frame mouse_data
+mouse_data = read.csv('MousePK_0.6mg_SingleDose_PO_245A_2021.csv', skip = 3)
+# take a look at your dataset using View(mouse_data)
+mouse_data
+
+# What happened when you loaded your dataset? Are column and row names correct?
+# Let's use the argument 'skip' to remove the headers
+
+```
+
+### b.) Wrangle
+
+```{r}
+mouse_data %>% data.frame %>% pivot_longer(TIME_HOURS) %> strsplit('X')
+# Now that we can see the data, the data is formatted in a wide format where the first column is the Time column, the column names are mouse IDs, and the values within the table are the concentration.
+
+# In R, it is easier to work with data in 'long' format. We can pivot our data frame using the dplyr function pivot_longer()
+
+# Next, we see that when we loaded our data the column names for ID had an "X" added to the number. Let's use strsplit() to remove the "X" and transform the ID number to a numeric value using as.numeric.
+
+# For good data management and coding practices, I prefer to always transform concentration to mg/L. This makes it straight forward to relate concentration to the dose (often reported in units of mg) and to volume and clearance (often reported in units of liter and liters/hour).
+
+# Next let's organize our dataset to have our columns ordered as ID, TIME_HOURS, CONC_NG.ML, and CONC_MG.L using "select." We can now "arrange" by ID so all data points are grouped by the mouse and by ascending time after dose.
+
+# Since we've been using dplyr to make changes, our data frame is technically now a tibble. We need to revert back to a data.frame(), the base R data frame, so that other packages can access this data. You can check what class your data frame is by using class().
+
+# Before moving on, VISUALIZE. Does everything look ok?
+
+```
+
+### c.) Calculate AUC
+
+```{r}
+# NonCompart AUC - check out NonCompart documentation
+
+# For simplicity, let's select just one subject, we can add the rest later
+# Let's subset the first ID
+
+# Let's use the NonCompart function AUC to determine the AUC for the first ID
+
+# AUC is the cumulative AUC from each time point. The default method to calculate this is using the trapezoidal rule
+
+```
+
+### d.) Calculate terminal slope
+
+```{r}
+# To calculate the terminal slope we can use the function BestSlope
+
+```
+
+```{r}
+
+# For full NCA parameters, we can use sNCA
+
+```
+
+### e.) Do NCA for all 12 mice at once
+
+```{r}
+# to evaluate all subjects at once we can use the NonCompart function called tblNCA
+
+# for meaning of acronyms, look at NonCompart documentation (page 12) or ?sNCA
+
+# take the average of all of the mice, the easiest way is using colMeans()
+
+# save the average VZFO and average CLFO as predicted_V and predicted_CL for scaling
+
+predicted_V <- 
+predicted_CL <- 
+
+```
+
+## EXERCISE 4. ORAL 1-CMT PK MODEL
+
+### c) CHALLENGE QUESTION
+
+You are an investigator working on developing a new drug, savic-245a, for the treatment of COVID-19. This drug has demonstrated promising efficacy in preclinical trials for preventing acute respiratory distress syndrome (ARDS). From preliminary studies, the drug appears most efficacious at concentrations above 25 mg/L. However, this drug increases your risk of seizure. These toxicities appear to be dose/concentration related and is associated with concentrations greater than 60 mg/L.
+
+Based on first-in-human data, savic-245a followed one-compartment kinetics where the half-life of savic-245a was 26 hours and the volume was 30 liters. When taken orally, the rate of absorption was found to be 1 (1/h).
+
+1.) Based on these data, what dose and dosing interval do you recommend to be above the efficacious concentration at 24 hours?
+
+2.) What strategies can you implement to be above efficacious concentrations in the first 12 hours, but to not exceed the toxicity threshold?
+
+#### 1. Model
+
+```{r}
+
+# Write ODEs for an oral 1-cmt model
+
+
+# run "my_model" to see the model summary and required parameters
+
+my_model_oral
+
+```
+
+#### 2. Parameters
+
+```{r}
+
+# What parameters are required?
+# Save your PK parameters as variables here:
+
+  
+```
+
+#### 3. Regimen
+
+```{r}
+
+
+```
+
+#### 4. Simulate
+
+```{r}
+# Put it all together
+# Use sim() to create a dataset of simulation
+
+
+```
+
+#### 5. Plot
+
+```{r}
+
+
+
+```
+
+## BONUS EXERCISE 5. ORAL 2-CMT PK MODEL
+
+First let's rebuild the oral 1-cmt model for comparison
+
+### a) Re-build an oral 1-cmt PK model
+
+#### 1. Model
+
+```{r}
+
+# Write ODEs for an oral 1-cmt model
+
+my_model_oral <- new_ode_model(code = "
+                               dAdt[1] = - KA*A[1] 
+                               dAdt[2] = KA*A[1] - CL/V*A[2]
+                               CP = A[2]/V
+                               ",
+                               obs = list(cmt = 2, scale = "V"),
+                               declare_variables = c("CP"))
+
+# run "my_model" to see the model summary and required parameters
+
+my_model_oral
+
+```
+
+#### 2. Parameters
+
+```{r}
+
+# What parameters are required?
+# Save your PK parameters as variables here:
+
+
+V = 250 # Central volume (L)
+CL = 10 # Clearance (L/h)
+KA = 1 # Rate of absorption (1/h)
+
+
+# We'll store these in a list that PKPDsim can read
+my_parameters_oral <- list("V"  = V,
+                           "CL" = CL,
+                           "KA" = KA
+                           )
+  
+```
+
+#### 3. Regimen
+
+```{r}
+# One single dose of 100 mg at time 0
+# Look up ?new_regimen to see arguments this function takes
+
+my_regimen <- new_regimen(amt = 100, time = 0) 
+
+```
+
+#### 4. Simulate
+
+```{r}
+# Put it all together
+# Use sim() to create a dataset of simulation
+
+# fill in the three arguments with our three components from above
+my_simulated_df_oral <- sim(ode = my_model_oral,
+                            regimen = my_regimen,
+                            parameters = my_parameters_oral,
+                            only_obs = T,
+                            output_include = list(variables=T)
+                           ) 
+
+# Open your new dataset and understand the set up. 
+# What is each column? What are the units of each column?
+```
+
+#### 5. Plot
+
+```{r}
+# use ggplot to plot the data 
+ggplot(my_simulated_df_oral, mapping=aes(x=t,y=y))+
+  geom_line(size=1)
+
+```
+
+### b) Simulate multiple doses
+
+#### Regimen
+
+```{r}
+# Instead of a single dose, now let's look at multiple doses across 7 days
+
+# HINT: for multiple dosing, you will need a vector of times.
+# Don't forget what our units for time are!
+
+# A vector can be created using c(). 
+## ex. c(0,24,48,72)
+
+# Another way is to use seq(). 
+## ex. seq(start_time, end_time, increment)
+## ex. daily dosing for 28 days: seq(0,672,24)
+
+my_regimen_multiple <- new_regimen(amt = 100, time = seq(0,7*24,24)) 
+
+```
+
+#### Simulate
+
+```{r}
+# Put it all together
+# Use sim() to create a dataset of simulation
+
+# fill in the three arguments with our three components from above
+my_simulated_df_mult_oral_1cmt <- sim(ode = my_model_oral,
+                                      regimen = my_regimen_multiple,
+                                      parameters = my_parameters_oral,
+                                      only_obs = T,
+                                      output_include = list(variables=T)
+                                     ) %>% 
+                                        mutate(MODEL="1-CMT")
+```
+
+### c) Now, build an ORAL 2-cmt PK model
+
+#### 1. Model
+
+```{r}
+
+# Write ODEs for an oral 2-cmt model
+
+
+# run "my_model" to see the model summary and required parameters
+
+
+
+```
+
+#### 2. Parameters
+
+```{r}
+# Save your PK parameters as variables here:
+# Use same parameters as 2-cmt IV model and KA of 1 
+
+  
+```
+
+#### 3. Regimen
+
+```{r}
+# One single dose of 100 mg at time 0
+# Look up ?new_regimen to see arguments this function takes
+
+
+
+```
+
+#### 4. Simulate
+
+Put it all together <br> Use sim() to create a dataset of simulation
+
+```{r}
+# fill in the three arguments with our three components from above
+my_simulated_df_oral_2cmt <- 
+
+
+compare_oral_models_df <- rbind(my_simulated_df_oral_2cmt,
+                                my_simulated_df_oral_1cmt)
+
+
+# Open your new dataset and understand the set up. 
+# What is each column? What are the units of each column?
+```
+
+#### 5. Plot
+
+```{r}
+# use ggplot to plot the data 
+
+
+```
+
+### d) Simulate multiple doses
+
+#### Regimen
+
+```{r}
+# Instead of a single dose, now let's look at multiple doses across 7 days
+
+# HINT: for multiple dosing, you will need a vector of times.
+# Don't forget what our units for time are!
+
+# A vector can be created using c(). 
+## ex. c(0,24,48,72)
+
+# Another way is to use seq(). 
+## ex. seq(start_time, end_time, increment)
+## ex. daily dosing for 28 days: seq(0,672,24)
+
+my_regimen_multiple <- new_regimen(amt = 100, time = seq(0,7*24,24)) 
+
+```
+
+#### Simulate
+
+```{r}
+# Put it all together
+# Use sim() to create a dataset of simulation
+
+
+
+```
+
+#### Plot
+
+```{r}
+# use ggplot to plot the data 
+
+
+
+```

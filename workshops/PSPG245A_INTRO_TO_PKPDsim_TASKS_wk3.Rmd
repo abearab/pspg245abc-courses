@@ -1,0 +1,283 @@
+---
+title: "PSPG 245A: PK concepts with PKPDsim - Workshop 3 Tasks"
+author: "Savic Lab"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 5
+    toc_float: TRUE
+  pdf_document: default
+---
+<br>
+<br>
+<b> Exercises </b><br>
+
+<b> 5) VARIABILITY part 1 </b>
+<br>  a) Simulate 200 patients including IIV in the model
+<br>  b) Re-visit optimal dosing if needed
+
+<b> 6) VARIABILITY part 2 </b>
+<br>  a) Simulate 200 patients for each WT group including IIV
+<br>  b) Re-visit optimal dosing if needed
+
+<b> PKPDsim documentation: </b> <br>
+<https://github.com/ronkeizer/pkpdsim-docs/tree/master> <br>
+
+# Installing and Loading packages
+
+```{r warning=F, message=F}
+# To install, remove the # before command and run the line (CTRL + RETURN)
+# Comment out (with #) if you've already installed them
+
+# To install PKPDsim
+# library(devtools)
+# install_github("InsightRX/PKPDsim")
+
+# To install other packages that we'll use today
+# install.packages("dplyr")
+# install.packages("tidyr")
+# install.packages("ggplot2")
+# install.packages("NonCompart")
+
+# Load libraries
+library(PKPDsim)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(NonCompart)
+
+```
+
+# Workshop #3
+
+## EXERCISE 5: Simulate 200 patients including IIV in the model and re-visit optimal dosing if needed <br>
+
+NEW: For the compound, savic-245a, the efficacy and toxicity thresholds were associated with Cmin,ss, or the minimum concentration at the end of a dosing interval at steady state. <br>
+
+<br> Thresholds are:
+<br> Cmin,ss efficacy= 25 mg/L
+<br> Cmin,ss toxicity= 60 mg/L
+
+<br> Variability (coefficient of variation (CV)) associated with V & CL
+<br> V- CV 10% 
+<br> CL- CV 15% 
+
+### a.) Simulate the oral 1-cmt model from the CHALLENGE QUESTION with Inter Individual Variability 
+
+#### 1. Model
+
+```{r}
+# write ODEs for an oral dose, 1 compartment model
+
+my_model <- new_ode_model(code = "
+                          dAdt[1] = -KA*A[1]
+                          dAdt[2] = KA*A[1] - CL/V*A[2]
+                          CP = A[2]/V
+                          ",
+                          obs = list(cmt = 2, scale = "V"),
+                          declare_variables = c("CP"))
+
+# run "my_model" to see the model summary and required parameters
+my_model
+
+```
+
+#### 2. Parameters
+
+```{r}
+# Input your PK parameters here:
+
+V = 30 # Central volume (L)
+CL = 0.8 # Clearance (L/h)
+KA = 1 # Rate of absorption (1/h)
+
+# We'll store these in a list that PKPDsim can read
+my_parameters <- list("V"  = V,
+                      "CL" = CL,
+                      "KA" = KA
+                      )
+  
+```
+
+#### 3. Regimen
+
+```{r}
+# 900 mg QD for 14 days
+my_regimen
+
+```
+
+#### 4. Simulate!
+
+Put it all together <br>
+Use sim() to create a dataset of simulation
+
+
+```{r}
+# to simulate between-subject variability, we need to add another argument, omega.
+# we are given coefficient of variation (CV), what's the relationship between variance (omega) and CV?
+# PKPDsim (and other PK packages) require omegas in a lower diagonal matrix to account for covariance. 
+# If you don't have covariance, the off-diagonal values are 0.
+# to make a vector, take the lower diagonal matrix and read top-bottom, left-right.
+#
+# ex.
+# 1
+# 2 3
+# 4 5 6
+#
+# = c(1,2,3,4,5,6)
+
+# fill in ode, regimen, parameters
+# to simulate multiple patients, we need to add an argument. Can you find it in the sim() documentation?
+
+
+my_simulated_df  
+
+```
+
+#### 5. Plot
+
+```{r}
+# use ggplot to plot the data
+# let's save our efficacy and threshold values as variables
+
+eff_threshold
+tox_threshold
+
+
+
+```
+
+### b.) Do we have at least 90% of patients within the defined therapeutic window? <br>
+Cmin,ss efficacy= 25 mg/L <br>
+Cmin,ss toxicity= 60 mg/L <br>
+
+```{r}
+# Select cmin at ss for each id
+
+# To do this, create a new dataset based off your simulation dataset that has one row per id and the concentration at the end of the dosing interval.
+
+# Now make a new column that categorizes the patients into above or below threshold with a "Yes" or "No"
+# You can do this using mutate and an ifelse() statement.
+
+# make a table of the Therapeutic window result
+# take to Google and learn how you can make the table a proportion of the total 
+
+```
+
+## EXERCISE 6: Simulate 200 patients for each WT group including IIV, and re-visit optimal dosing if needed
+
+An increase in CL has been associated with weight (WT) for savic-245a. 
+Different typical clearances have been determined for low and high body WT.
+
+Low body weight CL = 0.4 L/h
+High body weight CL = 1.04 L/h
+
+<br> Because we've used weight to describe variability in CL, the CV associated with CL has decreased.
+<br> V- CV 10% 
+<br> CL- CV 8%
+
+### a.) Simulate the PK profile for 200 patients with low WT and for 200 patients with high WT 
+
+#### 1. Model
+
+```{r}
+# write ODEs for an oral dose, 1 compartment model
+
+my_model <- new_ode_model(code = "
+                          dAdt[1] = -KA*A[1]
+                          dAdt[2] = KA*A[1] - CL/V*A[2]
+                          CP = A[2]/V
+                          ",
+                          obs = list(cmt = 2, scale = "V"),
+                          declare_variables = c("CP"))
+
+# run "my_model" to see the model summary and required parameters
+my_model
+
+```
+
+#### 2. Parameters
+
+```{r}
+# Input your PK parameters here:
+
+
+# We'll store these in a list that PKPDsim can read
+
+ 
+```
+
+#### 3. Regimen
+
+```{r}
+# 900 mg QD for 14 days
+
+```
+
+#### 4. Simulate!
+
+Put it all together <br>
+Use sim() to create a dataset of simulation
+
+
+```{r}
+# fill in the three arguments with our three components from above
+my_simulated_df_lowWT <- 
+
+my_simulated_df_hiWT <- 
+
+
+```
+
+#### 5. Plot
+
+```{r}
+# use ggplot to plot the data, one per each weight group
+
+
+```
+
+### b.) Do we have at least 90% of patients within the defined therapeutic window? <br>
+Cmin,ss efficacy= 25 mg/L <br>
+Cmin,ss toxicity= 60 mg/L <br>
+
+```{r}
+# Select cmin at ss for each id
+# What is the proportion of patients within the defined therapeutic window for each weight group?
+
+```
+
+### c.) Change the dosing schedules to have at least 90% of the patients within the defined therapeutic window <br>
+Available formulations: <br>
+-300 & 150 mg pills <br>
+(can be combined) <br>
+
+#### 1. Regimen
+
+```{r}
+
+```
+
+
+#### 2. Simulate!
+
+```{r}
+
+```
+
+#### 3. Plot
+
+```{r}
+
+```
+
+#### Do we have now at least 90% of patients withing the defined therapeutic window? <br>
+Cmin,ss efficacy= 25 mg/L <br>
+Cmin,ss toxicity= 60 mg/L <br>
+
+```{r}
+
+```
+

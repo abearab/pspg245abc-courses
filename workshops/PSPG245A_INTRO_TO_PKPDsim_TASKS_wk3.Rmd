@@ -8,18 +8,18 @@ output:
     toc_depth: 5
     toc_float: TRUE
   pdf_document: default
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
-<br>
-<br>
-<b> Exercises </b><br>
 
-<b> 5) VARIABILITY part 1 </b>
-<br>  a) Simulate 200 patients including IIV in the model
-<br>  b) Re-visit optimal dosing if needed
+<br> <br> <b> Exercises </b><br>
 
-<b> 6) VARIABILITY part 2 </b>
-<br>  a) Simulate 200 patients for each WT group including IIV
-<br>  b) Re-visit optimal dosing if needed
+<b> 5) VARIABILITY part 1 </b> <br> a) Simulate 200 patients including
+IIV in the model <br> b) Re-visit optimal dosing if needed
+
+<b> 6) VARIABILITY part 2 </b> <br> a) Simulate 200 patients for each WT
+group including IIV <br> b) Re-visit optimal dosing if needed
 
 <b> PKPDsim documentation: </b> <br>
 <https://github.com/ronkeizer/pkpdsim-docs/tree/master> <br>
@@ -53,17 +53,17 @@ library(NonCompart)
 
 ## EXERCISE 5: Simulate 200 patients including IIV in the model and re-visit optimal dosing if needed <br>
 
-NEW: For the compound, savic-245a, the efficacy and toxicity thresholds were associated with Cmin,ss, or the minimum concentration at the end of a dosing interval at steady state. <br>
+NEW: For the compound, savic-245a, the efficacy and toxicity thresholds
+were associated with Cmin,ss, or the minimum concentration at the end of
+a dosing interval at steady state. <br>
 
-<br> Thresholds are:
-<br> Cmin,ss efficacy= 25 mg/L
-<br> Cmin,ss toxicity= 60 mg/L
+<br> Thresholds are: <br> Cmin,ss efficacy= 25 mg/L <br> Cmin,ss
+toxicity= 60 mg/L
 
 <br> Variability (coefficient of variation (CV)) associated with V & CL
-<br> V- CV 10% 
-<br> CL- CV 15% 
+<br> V- CV 10% <br> CL- CV 15%
 
-### a.) Simulate the oral 1-cmt model from the CHALLENGE QUESTION with Inter Individual Variability 
+### a.) Simulate the oral 1-cmt model from the CHALLENGE QUESTION with Inter Individual Variability
 
 #### 1. Model
 
@@ -104,15 +104,15 @@ my_parameters <- list("V"  = V,
 
 ```{r}
 # 900 mg QD for 14 days
-my_regimen
-
+my_regimen <- new_regimen(
+  amt = 900, # 900 mg
+  times = seq(0,14*24,24)
+)
 ```
 
 #### 4. Simulate!
 
-Put it all together <br>
-Use sim() to create a dataset of simulation
-
+Put it all together <br> Use sim() to create a dataset of simulation
 
 ```{r}
 # to simulate between-subject variability, we need to add another argument, omega.
@@ -132,8 +132,24 @@ Use sim() to create a dataset of simulation
 # to simulate multiple patients, we need to add an argument. Can you find it in the sim() documentation?
 
 
-my_simulated_df  
+my_simulated_df = sim(
+  ode = my_model,
+  regimen = my_regimen,
+  parameters = my_parameters,
+  omega = cv_to_omega(
+    par_cv = list(V = .10, CL = .15, KA = 0), # V- CV 10%, CL- CV 15%
+    my_parameters
+  ),
+  t_obs = seq(0,24*14,1), # how freq. you want to see your observation, e.g. c(0,24,1) ... every hour 
+  
+  n_ind = 200,
+  seed = 123,
+  
+  only_obs = T,
+  output_include = list(variables = T, parameters = T)
+)
 
+my_simulated_df
 ```
 
 #### 5. Plot
@@ -142,16 +158,19 @@ my_simulated_df
 # use ggplot to plot the data
 # let's save our efficacy and threshold values as variables
 
-eff_threshold
-tox_threshold
+eff_threshold = 25 # mg/L
+tox_threshold = 60 # mg/L
 
-
-
+my_simulated_df %>% 
+  ggplot() +
+  geom_point(aes(x = t, y = y)) + 
+  geom_hline(yintercept = tox_threshold, colour = 'red', size = 1.2, alpha = .5) +
+  geom_hline(yintercept = eff_threshold, colour = 'blue', size = 1.2, alpha = .5)
 ```
 
 ### b.) Do we have at least 90% of patients within the defined therapeutic window? <br>
-Cmin,ss efficacy= 25 mg/L <br>
-Cmin,ss toxicity= 60 mg/L <br>
+
+Cmin,ss efficacy= 25 mg/L <br> Cmin,ss toxicity= 60 mg/L <br>
 
 ```{r}
 # Select cmin at ss for each id
@@ -161,6 +180,10 @@ Cmin,ss toxicity= 60 mg/L <br>
 # Now make a new column that categorizes the patients into above or below threshold with a "Yes" or "No"
 # You can do this using mutate and an ifelse() statement.
 
+my_simulated_df %>% 
+  filter(t == max(t)) %>%
+  mutate(ifelse())
+
 # make a table of the Therapeutic window result
 # take to Google and learn how you can make the table a proportion of the total 
 
@@ -168,17 +191,16 @@ Cmin,ss toxicity= 60 mg/L <br>
 
 ## EXERCISE 6: Simulate 200 patients for each WT group including IIV, and re-visit optimal dosing if needed
 
-An increase in CL has been associated with weight (WT) for savic-245a. 
-Different typical clearances have been determined for low and high body WT.
+An increase in CL has been associated with weight (WT) for savic-245a.
+Different typical clearances have been determined for low and high body
+WT.
 
-Low body weight CL = 0.4 L/h
-High body weight CL = 1.04 L/h
+Low body weight CL = 0.4 L/h High body weight CL = 1.04 L/h
 
-<br> Because we've used weight to describe variability in CL, the CV associated with CL has decreased.
-<br> V- CV 10% 
-<br> CL- CV 8%
+<br> Because we've used weight to describe variability in CL, the CV
+associated with CL has decreased. <br> V- CV 10% <br> CL- CV 8%
 
-### a.) Simulate the PK profile for 200 patients with low WT and for 200 patients with high WT 
+### a.) Simulate the PK profile for 200 patients with low WT and for 200 patients with high WT
 
 #### 1. Model
 
@@ -218,9 +240,7 @@ my_model
 
 #### 4. Simulate!
 
-Put it all together <br>
-Use sim() to create a dataset of simulation
-
+Put it all together <br> Use sim() to create a dataset of simulation
 
 ```{r}
 # fill in the three arguments with our three components from above
@@ -240,8 +260,8 @@ my_simulated_df_hiWT <-
 ```
 
 ### b.) Do we have at least 90% of patients within the defined therapeutic window? <br>
-Cmin,ss efficacy= 25 mg/L <br>
-Cmin,ss toxicity= 60 mg/L <br>
+
+Cmin,ss efficacy= 25 mg/L <br> Cmin,ss toxicity= 60 mg/L <br>
 
 ```{r}
 # Select cmin at ss for each id
@@ -250,16 +270,15 @@ Cmin,ss toxicity= 60 mg/L <br>
 ```
 
 ### c.) Change the dosing schedules to have at least 90% of the patients within the defined therapeutic window <br>
-Available formulations: <br>
--300 & 150 mg pills <br>
-(can be combined) <br>
+
+Available formulations: <br> -300 & 150 mg pills <br> (can be combined)
+<br>
 
 #### 1. Regimen
 
 ```{r}
 
 ```
-
 
 #### 2. Simulate!
 
@@ -274,10 +293,9 @@ Available formulations: <br>
 ```
 
 #### Do we have now at least 90% of patients withing the defined therapeutic window? <br>
-Cmin,ss efficacy= 25 mg/L <br>
-Cmin,ss toxicity= 60 mg/L <br>
+
+Cmin,ss efficacy= 25 mg/L <br> Cmin,ss toxicity= 60 mg/L <br>
 
 ```{r}
 
 ```
-
